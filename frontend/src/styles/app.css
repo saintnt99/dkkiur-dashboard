@@ -1,0 +1,89 @@
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+@media (max-width: 720px) {
+  .wrap {
+    padding: 20px 14px 48px;
+  }
+}
+
+.top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.top h1 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.top .sub {
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0;
+}
+
+.theme-toggle {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 0.5px solid var(--border);
+  margin-bottom: 28px;
+  overflow-x: auto;
+}
+
+.tab {
+  font-family: inherit;
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--text-2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -0.5px;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+  font-weight: 500;
+}
+
+.card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.placeholder {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+}

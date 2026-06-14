@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: dkkiur-dashboard
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SITE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dkkiur-db
+          property: connectionString
+      - key: SERVE_STATIC
+        value: "1"
+      - key: CORS_ORIGINS
+        value: ""
+
+databases:
+  - name: dkkiur-db
+    plan: free
+    postgresMajorVersion: "16"
