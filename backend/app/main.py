@@ -7,6 +7,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .routers import auth as auth_router
+from .routers import data as data_router
+from .routers import imports as imports_router
 
 app = FastAPI(title="ДККиУР Дашборд", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
@@ -20,6 +22,8 @@ if settings.cors_origin_list:
     )
 
 app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
+app.include_router(data_router.router, prefix="/api", tags=["data"])
+app.include_router(imports_router.router, prefix="/api/import", tags=["import"])
 
 
 @app.get("/api/health")
