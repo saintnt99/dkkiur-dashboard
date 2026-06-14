@@ -1,11 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useMorale } from "../api/data";
+import type { Climate, ClimatePoint } from "../types";
 
-const DEPTS = [
-  { id: "sport", label: "Спорт" },
-  { id: "culture", label: "КК" },
-  { id: "communications", label: "ВК" },
+const PARTICIPANTS = [
+  "Камнева Евгения",
+  "Серкова Ольга",
+  "Виктор Чумаков",
+  "Гущина Валерия",
+  "Наиль Якубалиев",
 ];
 
 function heatColor(v: number | null, target: number): string {
@@ -15,32 +18,65 @@ function heatColor(v: number | null, target: number): string {
   return "var(--danger-bg)";
 }
 
+function buildUnifiedClimate(items: Climate[] | null): Climate | null {
+  if (!items || items.length === 0) return null;
+  const first = items[0];
+  const target = first.target || 3;
+  const weekOrder = Array.from(new Set(items.flatMap((item) => item.series.map((point) => point.week))));
+  const series: ClimatePoint[] = weekOrder.map((week) => {
+    const points = items.flatMap((item) => item.series.filter((point) => point.week === week));
+    const values = points.map((point) => point.value).filter((value): value is number => value !== null);
+    const count = points.reduce((sum, point) => sum + point.count, 0);
+    return {
+      week,
+      value: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
+      count,
+    };
+  });
+  const latest = [...series].reverse().find((point) => point.value !== null);
+  return {
+    department_id: "management",
+    department: "Управление",
+    title: "Моральный климат управления",
+    question: first.question,
+    target,
+    employee_count: PARTICIPANTS.length,
+    latest_week: latest?.week ?? "",
+    latest_value: latest?.value ?? null,
+    status: latest?.value === undefined || latest.value === null ? "Нет данных" : latest.value >= target ? "В норме" : "Ниже цели",
+    series,
+  };
+}
+
 export default function Morale() {
   const { data, loading } = useMorale();
-  const [dept, setDept] = useState("sport");
-  const current = useMemo(() => data?.find((c) => c.department_id === dept), [data, dept]);
+  const current = useMemo(() => buildUnifiedClimate(data), [data]);
 
   if (loading) return <div className="card placeholder">Загрузка…</div>;
 
   return (
     <div>
-      <div className="filters">
-        {DEPTS.map((d) => (
-          <button key={d.id} className={`filter-chip${dept === d.id ? " active" : ""}`} onClick={() => setDept(d.id)}>
-            {d.label}
-          </button>
-        ))}
-      </div>
-
       {!current ? (
-        <div className="card placeholder">Нет данных по отделу</div>
+        <div className="card placeholder">Нет данных по моральному климату</div>
       ) : (
         <>
           <div className="metrics-bar">
-            <Metric label="Сотрудников" value={current.employee_count} />
+            <Metric label="Участников" value={current.employee_count} />
             <Metric label="Цель" value={`≥ ${current.target}`} />
             <Metric label="Последняя неделя" value={current.latest_week || "—"} />
             <Metric label="Последнее значение" value={current.latest_value === null ? "—" : current.latest_value.toFixed(2)} />
+          </div>
+
+          <div className="card morale-team">
+            <div>
+              <p style={{ fontSize: 13, color: "var(--text-2)", margin: "0 0 4px" }}>Состав управления</p>
+              <p style={{ fontSize: 12, color: "var(--text-3)", margin: 0 }}>Один общий моральный климат для трёх отделов</p>
+            </div>
+            <div className="morale-people">
+              {PARTICIPANTS.map((person) => (
+                <span key={person}>{person}</span>
+              ))}
+            </div>
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>

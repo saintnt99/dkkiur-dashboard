@@ -97,6 +97,12 @@
   align-items: center;
 }
 
+.filter-note {
+  color: var(--text-3);
+  font-size: 12px;
+  padding: 6px 0;
+}
+
 .filter-chip {
   font-family: inherit;
   font-size: 12px;
@@ -266,6 +272,38 @@
 
 .problem-card dt { color: var(--text-3); }
 .problem-card dd { margin: 0; color: var(--text-2); }
+
+.morale-team {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.morale-people {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.morale-people span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .morale-team {
+    grid-template-columns: 1fr;
+  }
+}
 
 .heatmap {
   display: block;

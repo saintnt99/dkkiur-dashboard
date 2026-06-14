@@ -5,22 +5,17 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
     envVars:
       - key: SITE_PASSWORD
-        sync: false
+        sync: false       # задаётся вручную в Render UI
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: dkkiur-db
-          property: connectionString
+        sync: false       # подставляем Neon Postgres URL
       - key: SERVE_STATIC
+        value: "1"
+      - key: COOKIE_SECURE
         value: "1"
       - key: CORS_ORIGINS
         value: ""
-
-databases:
-  - name: dkkiur-db
-    plan: free
-    postgresMajorVersion: "16"

@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/types.ts","./src/api/auth.ts","./src/api/data.ts","./src/components/sparkline.tsx","./src/components/uploadbutton.tsx","./src/pages/calendar.tsx","./src/pages/events.tsx","./src/pages/login.tsx","./src/pages/morale.tsx","./src/pages/problems.tsx","./src/pages/quality.tsx"],"version":"5.9.3"}

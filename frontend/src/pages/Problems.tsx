@@ -1,5 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useEvents } from "../api/data";
+
+const DEPTS = [
+  { id: "all", label: "Все отделы" },
+  { id: "sport", label: "Спорт" },
+  { id: "culture", label: "КК" },
+  { id: "communications", label: "ВК" },
+];
 
 const LEGEND = [
   { title: "Контрмеры определены (1)", fill: 0.25 },
@@ -27,7 +34,18 @@ function PieIcon({ fill }: { fill: number }) {
 
 export default function Problems() {
   const { data, loading } = useEvents();
+  const [dept, setDept] = useState("all");
+  const [priority, setPriority] = useState("Все");
+
   const problems = useMemo(() => (data ?? []).filter((e) => e.is_problem), [data]);
+  const priorities = useMemo(() => ["Все", ...Array.from(new Set(problems.map((e) => e.priority).filter(Boolean)))], [problems]);
+  const filtered = useMemo(() => {
+    return problems.filter((e) => {
+      if (dept !== "all" && e.department_id !== dept) return false;
+      if (priority !== "Все" && e.priority !== priority) return false;
+      return true;
+    });
+  }, [problems, dept, priority]);
 
   if (loading) return <div className="card placeholder">Загрузка…</div>;
 
@@ -45,8 +63,25 @@ export default function Problems() {
         </div>
       </div>
 
+      <div className="filters">
+        {DEPTS.map((d) => (
+          <button key={d.id} className={`filter-chip${dept === d.id ? " active" : ""}`} onClick={() => setDept(d.id)}>
+            {d.label}
+          </button>
+        ))}
+        <span style={{ width: 1, height: 16, background: "var(--border)" }} />
+        {priorities.map((p) => (
+          <button key={p} className={`filter-chip${priority === p ? " active" : ""}`} onClick={() => setPriority(p)}>
+            {p === "Все" ? "Все приоритеты" : p}
+          </button>
+        ))}
+        <span className="filter-note">
+          Показано {filtered.length} из {problems.length}
+        </span>
+      </div>
+
       <div className="problems-grid">
-        {problems.map((e) => (
+        {filtered.map((e) => (
           <div key={e.id} className="problem-card">
             <h3>
               {e.name} <span style={{ color: "var(--text-3)", fontWeight: 400 }}>· {e.department}</span>
@@ -73,7 +108,7 @@ export default function Problems() {
             </dl>
           </div>
         ))}
-        {problems.length === 0 && <div className="card placeholder">Проблемных мероприятий нет 🎉</div>}
+        {filtered.length === 0 && <div className="card placeholder">По выбранным фильтрам проблемных мероприятий нет</div>}
       </div>
     </div>
   );

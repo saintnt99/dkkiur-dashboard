@@ -23,7 +23,7 @@ def login(payload: LoginRequest, request: Request, response: Response) -> dict[s
         token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.cookie_secure,
         max_age=settings.jwt_ttl_days * 24 * 3600,
     )
     return {"identity": identity}
