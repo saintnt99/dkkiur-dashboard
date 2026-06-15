@@ -6,11 +6,14 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
+from .middleware import ETagMiddleware
 from .routers import auth as auth_router
 from .routers import data as data_router
 from .routers import imports as imports_router
 
 app = FastAPI(title="ДККиУР Дашборд", docs_url="/api/docs", openapi_url="/api/openapi.json")
+
+app.add_middleware(ETagMiddleware)
 
 if settings.cors_origin_list:
     app.add_middleware(

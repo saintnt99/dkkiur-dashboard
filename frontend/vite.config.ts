@@ -12,5 +12,14 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false,
+    cssCodeSplit: false,
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+        entryFileNames: "assets/app-[hash].js",
+        chunkFileNames: "assets/app-[hash].js",
+        assetFileNames: "assets/app-[hash][extname]",
+      },
+    },
   },
 });
