@@ -59,18 +59,36 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .kpi-fact {
   font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .kpi-target {
   font-size: 12px;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kpi-fact .inline-edit,
+.kpi-target .inline-edit {
+  word-break: keep-all;
+  white-space: nowrap;
+  max-width: none;
+}
+
+.kpi-fact .inline-edit-input,
+.kpi-target .inline-edit-input {
+  width: 6em;
+  display: inline-block;
 }
 
 .kpi-light {
@@ -197,6 +215,17 @@
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
+
+.events-table td:nth-child(1),  /* отдел */
+.events-table td:nth-child(2),  /* № */
+.events-table td:nth-child(4),  /* приоритет */
+.events-table td:nth-child(7),  /* дедлайн */
+.events-table td:nth-child(8)   /* статус */
+{
+  white-space: nowrap;
+}
+
+.events-table td:nth-child(3) { min-width: 240px; }
 
 .events-table tr.problem td:first-child { box-shadow: inset 3px 0 0 var(--danger-fg); }
 .events-table tr.done td:first-child { box-shadow: inset 3px 0 0 var(--success-fg); }
@@ -404,9 +433,11 @@ select.inline-edit-input { padding: 2px 4px; }
 }
 
 .measures-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+  table-layout: fixed;
 }
 
 .measures-table th,
@@ -427,18 +458,40 @@ select.inline-edit-input { padding: 2px 4px; }
   position: sticky;
   top: 0;
   z-index: 2;
+  white-space: nowrap;
 }
 
 .measures-table tr:hover td { background: var(--surface-2); }
 
-.measures-table .col-num   { width: 36px; text-align: center; color: var(--text-3); }
-.measures-table .col-pie   { width: 60px;  text-align: center; }
-.measures-table .col-week  { width: 80px;  }
-.measures-table .col-actor { width: 130px; }
-.measures-table .col-add   { width: 60px;  text-align: center; }
+.measures-table .col-num   { width: 40px; text-align: center; color: var(--text-3); white-space: nowrap; }
+.measures-table .col-dept  { width: 70px; white-space: nowrap; }
+.measures-table .col-task  { width: 220px; }
+.measures-table .col-week  { width: 70px; white-space: nowrap; text-align: center; }
+.measures-table .col-actor { width: 140px; }
+.measures-table .col-text  { width: 240px; }
+.measures-table .col-pie   { width: 80px; text-align: center; }
+.measures-table .col-close { width: 220px; }
+
+/* Длинный текст в ячейке — обрезаем до 3 строк, при редактировании раскрывается */
+.measures-table td .inline-edit {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.measures-table td .inline-edit-input {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  overflow: visible;
+}
 
 .measures-table textarea.inline-edit-input {
   min-height: 26px;
+  max-height: 200px;
 }
 
 /* Pie status icon */

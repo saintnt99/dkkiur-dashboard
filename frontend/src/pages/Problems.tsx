@@ -58,52 +58,52 @@ export default function Problems() {
           <thead>
             <tr>
               <th className="col-num">№</th>
-              <th>Отдел</th>
-              <th>Задача / блок</th>
+              <th className="col-dept">Отдел</th>
+              <th className="col-task">Задача / блок</th>
               <th className="col-week">Неделя</th>
               <th className="col-actor">Инициатор</th>
-              <th>Отклонение. Что? Влияние?</th>
-              <th>Первопричина</th>
-              <th>Контрмера</th>
+              <th className="col-text">Отклонение. Что? Влияние?</th>
+              <th className="col-text">Первопричина</th>
+              <th className="col-text">Контрмера</th>
               <th className="col-actor">Ответственный</th>
               <th className="col-week">Срок (нед.)</th>
               <th className="col-pie">Статус</th>
-              <th>Подтверждение закрытия</th>
+              <th className="col-close">Подтверждение закрытия</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((e, i) => (
               <tr key={e.id}>
                 <td className="col-num">{i + 1}</td>
-                <td>{e.department}</td>
-                <td>
-                  <InlineEdit kind="text" value={e.name} onSave={(v) => patch(e.id, "name", v)} placeholder="название" />
+                <td className="col-dept">{e.department}</td>
+                <td className="col-task">
+                  <InlineEdit kind="text" multiline value={e.name} onSave={(v) => patch(e.id, "name", v)} placeholder="название" />
                 </td>
-                <td>
-                  <InlineEdit kind="text" value={e.week} onSave={(v) => patch(e.id, "week", v)} placeholder="нед." />
+                <td className="col-week">
+                  <InlineEdit kind="text" value={e.week} onSave={(v) => patch(e.id, "week", v)} placeholder="—" />
                 </td>
-                <td>
+                <td className="col-actor">
                   <InlineEdit kind="text" value={e.owner} onSave={(v) => patch(e.id, "owner", v)} placeholder="инициатор" />
                 </td>
-                <td>
+                <td className="col-text">
                   <InlineEdit kind="text" multiline value={e.deviation} onSave={(v) => patch(e.id, "deviation", v)} placeholder="что? влияние?" />
                 </td>
-                <td>
+                <td className="col-text">
                   <InlineEdit kind="text" multiline value={e.root_cause} onSave={(v) => patch(e.id, "root_cause", v)} placeholder="первопричина" />
                 </td>
-                <td>
+                <td className="col-text">
                   <InlineEdit kind="text" multiline value={e.countermeasure} onSave={(v) => patch(e.id, "countermeasure", v)} placeholder="контрмера" />
                 </td>
-                <td>
+                <td className="col-actor">
                   <InlineEdit kind="text" value={e.responsible || e.curator} onSave={(v) => patch(e.id, "responsible", v)} placeholder="ответственный" />
                 </td>
-                <td>
-                  <InlineEdit kind="text" value={e.term_weeks} onSave={(v) => patch(e.id, "term_weeks", v)} placeholder="нед." />
+                <td className="col-week">
+                  <InlineEdit kind="text" value={e.term_weeks} onSave={(v) => patch(e.id, "term_weeks", v)} placeholder="—" />
                 </td>
                 <td className="col-pie">
                   <PieStatus value={e.status_code} onChange={(v) => patch(e.id, "status_code", v)} />
                 </td>
-                <td>
+                <td className="col-close">
                   <InlineEdit kind="text" multiline value={e.closure_confirm} onSave={(v) => patch(e.id, "closure_confirm", v)} placeholder="как закрыто" />
                 </td>
               </tr>
