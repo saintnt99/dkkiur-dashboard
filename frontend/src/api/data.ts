@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Climate, Department, EventItem, Measure, Meeting, MoraleEntry, QualityMetric, Summary } from "../types";
 
-const DEFAULT_REFRESH_MS = 5000;
+const DEFAULT_REFRESH_MS = 10000;
 
 async function getJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
