@@ -40,5 +40,8 @@ if settings.serve_static:
         def spa_fallback(full_path: str) -> FileResponse:
             target = static_dir / full_path
             if target.is_file():
-                return FileResponse(target)
-            return FileResponse(static_dir / "index.html")
+                # ассеты с хешами в имени — кэшируем, остальное (index.html) — нет
+                if target.suffix in (".js", ".css", ".woff", ".woff2", ".png", ".jpg", ".svg"):
+                    return FileResponse(target, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+                return FileResponse(target, headers={"Cache-Control": "no-cache"})
+            return FileResponse(static_dir / "index.html", headers={"Cache-Control": "no-cache"})
