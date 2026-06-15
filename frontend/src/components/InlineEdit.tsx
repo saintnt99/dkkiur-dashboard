@@ -28,6 +28,8 @@ export function InlineEdit(props: Props) {
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  const title = error ? "Не удалось сохранить. Проверьте значение и попробуйте ещё раз." : "Нажмите чтобы изменить";
+
   async function commit() {
     setError(false);
     const initial = formatValue(props);
@@ -58,7 +60,7 @@ export function InlineEdit(props: Props) {
       <span
         className={`inline-edit${error ? " err" : ""}`}
         onClick={() => setEditing(true)}
-        title="Нажмите чтобы изменить"
+        title={title}
       >
         {displayValue(props) || <span className="inline-placeholder">{props.placeholder || "—"}</span>}
       </span>
@@ -80,6 +82,8 @@ export function InlineEdit(props: Props) {
     },
     disabled: saving,
     className: `inline-edit-input${error ? " err" : ""}`,
+    title,
+    "aria-invalid": error,
   };
 
   if (props.kind === "select") {

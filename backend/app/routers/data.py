@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from math import isfinite
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,6 +14,13 @@ from ..db import get_db
 from ..models import AuditLog, ClimateSeries, Department, Event, Measure, Meeting, MoraleEntry, QualityMetric
 
 router = APIRouter()
+
+MORALE_DEPARTMENT_DEFAULTS = {
+    "team": ("Команда управления ДККиУР", "Команда"),
+    "sport": ("Отдел корпоративного спорта", "Спорт"),
+    "culture": ("Отдел развития корпоративной культуры и сообщества", "КК"),
+    "communications": ("Отдел корпоративных коммуникаций", "ВК"),
+}
 
 
 def _dept(d: Department) -> dict[str, str]:
@@ -106,6 +114,27 @@ def _meeting(m: Meeting) -> dict[str, Any]:
         "quality_owner": m.quality_owner,
         "quality_owner_phone": m.quality_owner_phone,
     }
+
+
+def _ensure_morale_department(db: Session, department_id: str) -> Department:
+    dept = db.get(Department, department_id)
+    if dept:
+        return dept
+    if department_id not in MORALE_DEPARTMENT_DEFAULTS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"unknown department {department_id}")
+    name, short = MORALE_DEPARTMENT_DEFAULTS[department_id]
+    dept = Department(id=department_id, name=name, short_name=short)
+    db.add(dept)
+    db.flush()
+    return dept
+
+
+def _validate_morale_value(value: float | None) -> float | None:
+    if value is None:
+        return None
+    if not isfinite(value) or value < 0 or value > 5:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "morale value must be between 0 and 5")
+    return value
 
 
 @router.get("/departments")
@@ -245,24 +274,31 @@ def list_morale_entries(db: Session = Depends(get_db), _: str = Depends(require_
 
 @router.put("/morale_entries")
 def upsert_morale_entry(payload: MoralePatch, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    department_id = payload.department_id.strip()
+    employee = payload.employee.strip()
+    week = payload.week.strip()
+    value = _validate_morale_value(payload.value)
+    if not department_id or not employee or not week:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "department_id, employee and week are required")
+    _ensure_morale_department(db, department_id)
     existing = db.scalar(
         select(MoraleEntry).where(
-            MoraleEntry.department_id == payload.department_id,
-            MoraleEntry.employee == payload.employee,
-            MoraleEntry.week == payload.week,
+            MoraleEntry.department_id == department_id,
+            MoraleEntry.employee == employee,
+            MoraleEntry.week == week,
         )
     )
     if existing:
         old = existing.value
-        existing.value = payload.value
-        db.add(AuditLog(identity=identity, entity="morale_entry", entity_id=str(existing.id), field="value", old_value=str(old) if old is not None else None, new_value=str(payload.value) if payload.value is not None else None))
+        existing.value = value
+        db.add(AuditLog(identity=identity, entity="morale_entry", entity_id=str(existing.id), field="value", old_value=str(old) if old is not None else None, new_value=str(value) if value is not None else None))
     else:
-        existing = MoraleEntry(department_id=payload.department_id, employee=payload.employee, week=payload.week, value=payload.value)
+        existing = MoraleEntry(department_id=department_id, employee=employee, week=week, value=value)
         db.add(existing)
         db.flush()
-        db.add(AuditLog(identity=identity, entity="morale_entry", entity_id=str(existing.id), field="value", old_value=None, new_value=str(payload.value) if payload.value is not None else None))
+        db.add(AuditLog(identity=identity, entity="morale_entry", entity_id=str(existing.id), field="value", old_value=None, new_value=str(value) if value is not None else None))
     db.commit()
-    return {"ok": True, "id": existing.id, "value": payload.value}
+    return {"ok": True, "id": existing.id, "value": value}
 
 
 @router.post("/events")
