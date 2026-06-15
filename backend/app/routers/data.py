@@ -144,21 +144,23 @@ def list_departments(db: Session = Depends(get_db), _: str = Depends(require_aut
 
 @router.get("/quality")
 def list_quality(db: Session = Depends(get_db), _: str = Depends(require_auth)) -> list[dict[str, Any]]:
-    rows = db.scalars(select(QualityMetric)).all()
+    # Стабильный порядок: иначе после UPDATE Postgres переносит строку в конец таблицы.
+    rows = db.scalars(select(QualityMetric).order_by(QualityMetric.department_id, QualityMetric.id)).all()
     depts = {d.id: d for d in db.scalars(select(Department))}
     return [_quality(m, depts[m.department_id]) for m in rows if m.department_id in depts]
 
 
 @router.get("/events")
 def list_events(db: Session = Depends(get_db), _: str = Depends(require_auth)) -> list[dict[str, Any]]:
-    rows = db.scalars(select(Event)).all()
+    # Стабильный порядок: department → исходная строка xlsx → id.
+    rows = db.scalars(select(Event).order_by(Event.department_id, Event.row_number, Event.id)).all()
     depts = {d.id: d for d in db.scalars(select(Department))}
     return [_event(e, depts[e.department_id]) for e in rows if e.department_id in depts]
 
 
 @router.get("/morale")
 def list_morale(db: Session = Depends(get_db), _: str = Depends(require_auth)) -> list[dict[str, Any]]:
-    rows = db.scalars(select(ClimateSeries)).all()
+    rows = db.scalars(select(ClimateSeries).order_by(ClimateSeries.department_id, ClimateSeries.id)).all()
     depts = {d.id: d for d in db.scalars(select(Department))}
     return [_climate(c, depts[c.department_id]) for c in rows if c.department_id in depts]
 
