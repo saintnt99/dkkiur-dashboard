@@ -1,9 +1,11 @@
-{$DOMAIN} {
+# HTTP-only конфиг: TLS терминируется снаружи (Cloudflare Tunnel).
+# Прямые входящие 80/443 у Timeweb режут, поэтому Caddy слушает только :80
+# и принимает любой Host — от tunnel или от sslip.io если порт когда-нибудь откроют.
+:80 {
     encode gzip
     reverse_proxy api:8000
 
     header {
-        Strict-Transport-Security "max-age=31536000"
         X-Content-Type-Options "nosniff"
         Referrer-Policy "no-referrer-when-downgrade"
     }
