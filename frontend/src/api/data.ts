@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Climate, Department, EventItem, Measure, Meeting, MoraleEntry, QualityMetric, Summary } from "../types";
+
+const DEFAULT_REFRESH_MS = 5000;
 
 async function getJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
@@ -7,17 +9,28 @@ async function getJSON<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function useFetch<T>(url: string, deps: unknown[] = []): { data: T | null; loading: boolean; error: string | null; reload: () => void } {
+export function useFetch<T>(
+  url: string,
+  deps: unknown[] = [],
+  options: { refreshMs?: number } = {},
+): { data: T | null; loading: boolean; error: string | null; reload: () => void } {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const loadedRef = useRef(false);
+  const refreshMs = options.refreshMs ?? DEFAULT_REFRESH_MS;
+
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    setLoading(!loadedRef.current);
     setError(null);
     getJSON<T>(url)
-      .then((d) => alive && setData(d))
+      .then((d) => {
+        if (!alive) return;
+        loadedRef.current = true;
+        setData(d);
+      })
       .catch((e: Error) => alive && setError(e.message))
       .finally(() => alive && setLoading(false));
     return () => {
@@ -25,6 +38,24 @@ export function useFetch<T>(url: string, deps: unknown[] = []): { data: T | null
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, tick, ...deps]);
+
+  useEffect(() => {
+    if (!refreshMs) return;
+    const refresh = () => setTick((t) => t + 1);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const interval = window.setInterval(refreshWhenVisible, refreshMs);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, refreshMs, ...deps]);
+
   return { data, loading, error, reload: () => setTick((t) => t + 1) };
 }
 
