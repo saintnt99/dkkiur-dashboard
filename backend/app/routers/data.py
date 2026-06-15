@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import require_auth
 from ..db import get_db
-from ..models import AuditLog, ClimateSeries, Department, Event, Meeting, MoraleEntry, QualityMetric
+from ..models import AuditLog, ClimateSeries, Department, Event, Measure, Meeting, MoraleEntry, QualityMetric
 
 router = APIRouter()
 
@@ -182,6 +182,15 @@ class MoralePatch(BaseModel):
     value: float | None
 
 
+class NewEvent(BaseModel):
+    department_id: str
+    name: str = ""
+
+
+class NewMeasure(BaseModel):
+    department_id: str | None = None
+
+
 def _apply_patch(target: Any, field: str, value: Any, identity: str, entity: str, db: Session) -> dict[str, Any]:
     if not hasattr(target, field):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"unknown field {field}")
@@ -254,6 +263,91 @@ def upsert_morale_entry(payload: MoralePatch, db: Session = Depends(get_db), ide
         db.add(AuditLog(identity=identity, entity="morale_entry", entity_id=str(existing.id), field="value", old_value=None, new_value=str(payload.value) if payload.value is not None else None))
     db.commit()
     return {"ok": True, "id": existing.id, "value": payload.value}
+
+
+@router.post("/events")
+def create_event(payload: NewEvent, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    # id вида custom-{n}
+    existing = db.scalar(select(Event).where(Event.id.like("custom-%")).order_by(Event.id.desc()))
+    n = 1
+    if existing and existing.id.startswith("custom-"):
+        try:
+            n = int(existing.id.split("-")[-1]) + 1
+        except ValueError:
+            n = 1
+    new_id = f"custom-{n}"
+    while db.get(Event, new_id):
+        n += 1
+        new_id = f"custom-{n}"
+    ev = Event(id=new_id, department_id=payload.department_id, row_number=0, name=payload.name or "Новое событие")
+    db.add(ev)
+    db.add(AuditLog(identity=identity, entity="event", entity_id=new_id, field="*create*", old_value=None, new_value=payload.name))
+    db.commit()
+    dept = db.get(Department, payload.department_id)
+    return _event(ev, dept) if dept else {"id": new_id}
+
+
+@router.delete("/events/{event_id}")
+def delete_event(event_id: str, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    ev = db.get(Event, event_id)
+    if not ev:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "event not found")
+    db.add(AuditLog(identity=identity, entity="event", entity_id=event_id, field="*delete*", old_value=ev.name, new_value=None))
+    db.delete(ev)
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/measures")
+def list_measures(db: Session = Depends(get_db), _: str = Depends(require_auth)) -> list[dict[str, Any]]:
+    rows = db.scalars(select(Measure).order_by(Measure.sort_order, Measure.id)).all()
+    return [
+        {
+            "id": r.id,
+            "department_id": r.department_id,
+            "task": r.task,
+            "week": r.week,
+            "initiator": r.initiator,
+            "deviation": r.deviation,
+            "root_cause": r.root_cause,
+            "countermeasure": r.countermeasure,
+            "responsible": r.responsible,
+            "term_weeks": r.term_weeks,
+            "status_code": r.status_code,
+            "closure_confirm": r.closure_confirm,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/measures")
+def create_measure(payload: NewMeasure, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    last_order = db.scalar(select(Measure.sort_order).order_by(Measure.sort_order.desc())) or 0
+    m = Measure(department_id=payload.department_id, sort_order=last_order + 1)
+    db.add(m)
+    db.flush()
+    db.add(AuditLog(identity=identity, entity="measure", entity_id=str(m.id), field="*create*", old_value=None, new_value=None))
+    db.commit()
+    return {"id": m.id, "department_id": m.department_id, "task": "", "week": "", "initiator": "", "deviation": "", "root_cause": "", "countermeasure": "", "responsible": "", "term_weeks": "", "status_code": 0, "closure_confirm": ""}
+
+
+@router.patch("/measures/{measure_id}")
+def patch_measure(measure_id: int, payload: PatchPayload, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    m = db.get(Measure, measure_id)
+    if not m:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "measure not found")
+    return _apply_patch(m, payload.field, payload.value, identity, "measure", db)
+
+
+@router.delete("/measures/{measure_id}")
+def delete_measure(measure_id: int, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    m = db.get(Measure, measure_id)
+    if not m:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "measure not found")
+    db.add(AuditLog(identity=identity, entity="measure", entity_id=str(measure_id), field="*delete*", old_value=m.task, new_value=None))
+    db.delete(m)
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/audit")

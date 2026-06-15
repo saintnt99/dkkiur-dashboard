@@ -216,16 +216,30 @@
   white-space: nowrap;
 }
 
-.events-table td:nth-child(1),  /* отдел */
-.events-table td:nth-child(2),  /* № */
-.events-table td:nth-child(4),  /* приоритет */
-.events-table td:nth-child(7),  /* дедлайн */
-.events-table td:nth-child(8)   /* статус */
-{
-  white-space: nowrap;
+.events-table td.nw { white-space: nowrap; }
+.events-table td:nth-child(3) { min-width: 240px; }
+
+.row-del {
+  font-family: inherit;
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  line-height: 22px;
+  padding: 0;
+  border-radius: 999px;
+  border: 0.5px solid var(--border-2);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
 }
 
-.events-table td:nth-child(3) { min-width: 240px; }
+.row-del:hover {
+  color: var(--danger-fg);
+  border-color: var(--danger-fg);
+  background: var(--danger-bg);
+}
+
+.measures-table .col-del { width: 36px; text-align: center; }
 
 .events-table tr.problem td:first-child { box-shadow: inset 3px 0 0 var(--danger-fg); }
 .events-table tr.done td:first-child { box-shadow: inset 3px 0 0 var(--success-fg); }

@@ -4,6 +4,7 @@ from .data import (  # noqa: F401
     Department,
     Event,
     ImportLog,
+    Measure,
     Meeting,
     MoraleEntry,
     QualityMetric,

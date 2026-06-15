@@ -81,6 +81,27 @@ class Event(Base):
     department: Mapped[Department] = relationship(back_populates="events")
 
 
+class Measure(Base):
+    """Журнал отклонений / мероприятий. Отдельная сущность, не связан с Event."""
+    __tablename__ = "measures"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    department_id: Mapped[str | None] = mapped_column(ForeignKey("departments.id"), nullable=True)
+    task: Mapped[str] = mapped_column(Text, default="")
+    week: Mapped[str] = mapped_column(String(32), default="")
+    initiator: Mapped[str] = mapped_column(String(255), default="")
+    deviation: Mapped[str] = mapped_column(Text, default="")
+    root_cause: Mapped[str] = mapped_column(Text, default="")
+    countermeasure: Mapped[str] = mapped_column(Text, default="")
+    responsible: Mapped[str] = mapped_column(String(255), default="")
+    term_weeks: Mapped[str] = mapped_column(String(32), default="")
+    status_code: Mapped[int] = mapped_column(Integer, default=0)
+    closure_confirm: Mapped[str] = mapped_column(Text, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class MoraleEntry(Base):
     """Балл морального климата сотрудника за конкретную неделю.
 

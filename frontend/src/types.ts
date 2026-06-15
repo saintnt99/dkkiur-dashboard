@@ -67,6 +67,21 @@ export type MoraleEntry = {
   value: number | null;
 };
 
+export type Measure = {
+  id: number;
+  department_id: string | null;
+  task: string;
+  week: string;
+  initiator: string;
+  deviation: string;
+  root_cause: string;
+  countermeasure: string;
+  responsible: string;
+  term_weeks: string;
+  status_code: number;
+  closure_confirm: string;
+};
+
 export type ClimatePoint = { week: string; value: number | null; count: number };
 
 export type Climate = {

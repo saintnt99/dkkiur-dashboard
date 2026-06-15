@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { InlineEdit } from "../components/InlineEdit";
-import { patchEvent2, useEvents, useSummary } from "../api/data";
+import { StatusPill } from "../components/StatusPill";
+import { createEvent, deleteEvent, patchEvent2, useEvents, useSummary } from "../api/data";
 import type { EventItem } from "../types";
 
 const DEPTS = [
@@ -33,15 +34,6 @@ const PRIORITY_OPTIONS = [
   { value: "Высокий", label: "Высокий" },
   { value: "Средний", label: "Средний" },
   { value: "Низкий", label: "Низкий" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "В работе", label: "В работе" },
-  { value: "Проблема", label: "Проблема" },
-  { value: "Запланировано", label: "Запланировано" },
-  { value: "Приостановлено", label: "Приостановлено" },
-  { value: "Завершено", label: "Завершено" },
 ];
 
 export default function Events() {
@@ -99,6 +91,17 @@ export default function Events() {
         <button className={`filter-chip${hpOnly ? " active" : ""}`} onClick={() => setHpOnly((v) => !v)}>
           Только высокий
         </button>
+        <button
+          className="add-row"
+          style={{ marginTop: 0, marginLeft: "auto" }}
+          onClick={async () => {
+            const targetDept = dept === "all" ? "sport" : dept;
+            await createEvent(targetDept, "Новое событие");
+            reload();
+          }}
+        >
+          + Создать событие
+        </button>
       </div>
 
       <div className="events-table-wrap card" style={{ padding: 0, overflowX: "auto" }}>
@@ -113,6 +116,7 @@ export default function Events() {
               <th>Куратор</th>
               <th>Дедлайн</th>
               <th>Статус</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -121,29 +125,37 @@ export default function Events() {
                 await patchEvent2(e.id, field, value);
                 reload();
               };
+              const remove = async () => {
+                if (!window.confirm(`Удалить «${e.name}»?`)) return;
+                await deleteEvent(e.id);
+                reload();
+              };
               return (
                 <tr key={e.id} className={rowClass(e)}>
-                  <td>{e.department}</td>
-                  <td>
+                  <td className="nw">{e.department}</td>
+                  <td className="nw">
                     <InlineEdit kind="text" value={e.number} onSave={(v) => patch("number", v)} />
                   </td>
                   <td>
                     <InlineEdit kind="text" multiline value={e.name} onSave={(v) => patch("name", v)} />
                   </td>
-                  <td>
+                  <td className="nw">
                     <InlineEdit kind="select" value={e.priority} options={PRIORITY_OPTIONS} onSave={(v) => patch("priority", v)} />
                   </td>
-                  <td>
+                  <td className="nw">
                     <InlineEdit kind="text" value={e.owner} onSave={(v) => patch("owner", v)} />
                   </td>
-                  <td>
+                  <td className="nw">
                     <InlineEdit kind="text" value={e.curator} onSave={(v) => patch("curator", v)} />
                   </td>
-                  <td>
+                  <td className="nw">
                     <InlineEdit kind="text" value={e.deadline} onSave={(v) => patch("deadline", v)} />
                   </td>
-                  <td>
-                    <InlineEdit kind="select" value={e.status} options={STATUS_OPTIONS} onSave={(v) => patch("status", v)} />
+                  <td className="nw">
+                    <StatusPill value={e.status} onChange={(v) => patch("status", v)} />
+                  </td>
+                  <td className="nw">
+                    <button className="row-del" title="Удалить" onClick={remove}>×</button>
                   </td>
                 </tr>
               );
