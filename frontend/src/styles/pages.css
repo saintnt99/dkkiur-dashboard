@@ -199,6 +199,15 @@
   font-size: 13px;
 }
 
+.events-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.wrap-wide .events-table {
+  table-layout: fixed;
+}
+
 .events-table th,
 .events-table td {
   text-align: left;
@@ -218,6 +227,34 @@
 
 .events-table td.nw { white-space: nowrap; }
 .events-table td:nth-child(3) { min-width: 240px; }
+
+.wrap-wide .events-table td {
+  word-break: break-word;
+}
+
+.wrap-wide .events-table td.nw {
+  white-space: normal;
+}
+
+.wrap-wide .events-table td:nth-child(2),
+.wrap-wide .events-table td:nth-child(7),
+.wrap-wide .events-table td:nth-child(9) {
+  white-space: nowrap;
+}
+
+.wrap-wide .events-table td:nth-child(3) {
+  min-width: 0;
+}
+
+.wrap-wide .events-table th:nth-child(1) { width: 7%; }
+.wrap-wide .events-table th:nth-child(2) { width: 5%; }
+.wrap-wide .events-table th:nth-child(3) { width: 32%; }
+.wrap-wide .events-table th:nth-child(4) { width: 9%; }
+.wrap-wide .events-table th:nth-child(5) { width: 11%; }
+.wrap-wide .events-table th:nth-child(6) { width: 11%; }
+.wrap-wide .events-table th:nth-child(7) { width: 8%; }
+.wrap-wide .events-table th:nth-child(8) { width: 12%; }
+.wrap-wide .events-table th:nth-child(9) { width: 44px; }
 
 .row-del {
   font-family: inherit;
@@ -442,13 +479,13 @@ select.inline-edit-input { padding: 2px 4px; }
   background: var(--surface);
   border: 0.5px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 8px;
+  padding: 0;
   overflow-x: auto;
 }
 
 .measures-table {
-  width: max-content;
-  min-width: 100%;
+  width: 100%;
+  min-width: 0;
   border-collapse: collapse;
   font-size: 12px;
   table-layout: fixed;
@@ -457,7 +494,7 @@ select.inline-edit-input { padding: 2px 4px; }
 .measures-table th,
 .measures-table td {
   text-align: left;
-  padding: 8px 10px;
+  padding: 7px 8px;
   border-bottom: 0.5px solid var(--border);
   vertical-align: top;
 }
@@ -468,23 +505,24 @@ select.inline-edit-input { padding: 2px 4px; }
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  line-height: 1.2;
   background: var(--surface);
   position: sticky;
   top: 0;
   z-index: 2;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .measures-table tr:hover td { background: var(--surface-2); }
 
-.measures-table .col-num   { width: 40px; text-align: center; color: var(--text-3); white-space: nowrap; }
-.measures-table .col-dept  { width: 70px; white-space: nowrap; }
-.measures-table .col-task  { width: 220px; }
-.measures-table .col-week  { width: 70px; white-space: nowrap; text-align: center; }
-.measures-table .col-actor { width: 140px; }
-.measures-table .col-text  { width: 240px; }
-.measures-table .col-pie   { width: 80px; text-align: center; }
-.measures-table .col-close { width: 220px; }
+.measures-table .col-num   { width: 36px; text-align: center; color: var(--text-3); white-space: nowrap; }
+.measures-table .col-dept  { width: 64px; white-space: nowrap; }
+.measures-table .col-task  { width: 11%; }
+.measures-table .col-week  { width: 56px; white-space: nowrap; text-align: center; }
+.measures-table .col-actor { width: 112px; }
+.measures-table .col-text  { width: 11%; }
+.measures-table .col-pie   { width: 64px; text-align: center; }
+.measures-table .col-close { width: 9%; }
 
 /* Длинный текст в ячейке — обрезаем до 3 строк, при редактировании раскрывается */
 .measures-table td .inline-edit {

@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Login from "./pages/Login";
 import Quality from "./pages/Quality";
@@ -22,6 +22,8 @@ function useTheme() {
   );
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.style.backgroundColor = "var(--bg)";
+    document.body.style.backgroundColor = "var(--bg)";
     localStorage.setItem("dkkiur.theme", theme);
   }, [theme]);
   return { theme, toggle: () => setTheme((t) => (t === "light" ? "dark" : "light")) };
@@ -30,6 +32,8 @@ function useTheme() {
 export default function App() {
   const { theme, toggle } = useTheme();
   const { identity, loading } = useAuth();
+  const location = useLocation();
+  const isWidePage = location.pathname === "/events" || location.pathname === "/problems";
 
   if (loading) return <div className="wrap placeholder">Загрузка…</div>;
   if (!identity) {
@@ -42,7 +46,7 @@ export default function App() {
   }
 
   return (
-    <div className="wrap">
+    <div className={`wrap${isWidePage ? " wrap-wide" : ""}`}>
       <header className="top">
         <div>
           <h1>ДККиУР — Дашборд</h1>

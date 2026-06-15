@@ -53,7 +53,7 @@ export default function Problems() {
   const deptLabel = (id: string | null) => DEPT_OPTIONS.find((o) => o.value === id)?.label ?? "—";
 
   return (
-    <div>
+    <div className="problems-page">
       <div className="filters">
         {DEPTS.map((d) => (
           <button

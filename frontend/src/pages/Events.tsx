@@ -62,7 +62,7 @@ export default function Events() {
     : [];
 
   return (
-    <div>
+    <div className="events-page">
       <div className="metrics-bar">
         <Metric label="Всего событий" value={summary?.events_total ?? "—"} />
         <Metric label="Завершено" value={summary ? `${summary.events_done}/${summary.events_total}` : "—"} />
@@ -104,7 +104,7 @@ export default function Events() {
         </button>
       </div>
 
-      <div className="events-table-wrap card" style={{ padding: 0, overflowX: "auto" }}>
+      <div className="events-table-wrap card">
         <table className="events-table">
           <thead>
             <tr>
@@ -162,7 +162,7 @@ export default function Events() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="placeholder">
+                <td colSpan={9} className="placeholder">
                   Нет событий
                 </td>
               </tr>

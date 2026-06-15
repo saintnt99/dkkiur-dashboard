@@ -2,10 +2,6 @@ import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { InlineEdit } from "../components/InlineEdit";
 import { upsertMorale, useMoraleEntries } from "../api/data";
-import type { MoraleEntry } from "../types";
-
-// "team" — команда управления (5 закреплённых лиц), остальные — сотрудники отделов
-type TabId = "team" | "sport" | "culture" | "communications";
 
 const TEAM_MEMBERS = [
   "Камнева Евгения",
@@ -15,17 +11,10 @@ const TEAM_MEMBERS = [
   "Наиль Якубалиев",
 ];
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "team", label: "Команда" },
-  { id: "sport", label: "Спорт" },
-  { id: "culture", label: "КК" },
-  { id: "communications", label: "ВК" },
-];
+const DEPARTMENT_ROWS = ["Спорт", "КК", "ВК"];
+const BASE_ROWS = [...TEAM_MEMBERS, ...DEPARTMENT_ROWS];
 
-// Псевдо-department для команды управления (чтобы запись отличалась в БД)
 const TEAM_DEPT_ID = "team";
-
-// Недели 5-26 — те же что в xlsx
 const WEEKS = Array.from({ length: 22 }, (_, i) => String(i + 5));
 const TARGET = 3;
 
@@ -38,29 +27,25 @@ function heatColor(v: number | null): string {
 
 export default function Morale() {
   const { data, loading, reload } = useMoraleEntries();
-  const [tab, setTab] = useState<TabId>("team");
   const [savingCell, setSavingCell] = useState<string | null>(null);
 
-  const deptId = tab === "team" ? TEAM_DEPT_ID : tab;
-  const tabEntries = useMemo(() => (data ?? []).filter((e) => e.department_id === deptId), [data, deptId]);
+  const teamEntries = useMemo(() => (data ?? []).filter((e) => e.department_id === TEAM_DEPT_ID), [data]);
 
-  // Список сотрудников для текущего таба
   const employees = useMemo(() => {
-    if (tab === "team") return TEAM_MEMBERS;
-    const set = new Set<string>(tabEntries.map((e) => e.employee));
-    return Array.from(set).sort();
-  }, [tab, tabEntries]);
+    const base = new Set(BASE_ROWS);
+    const custom = teamEntries.map((e) => e.employee).filter((name) => !base.has(name));
+    return [...BASE_ROWS, ...Array.from(new Set(custom)).sort()];
+  }, [teamEntries]);
 
-  // employee → week → value
   const grid = useMemo(() => {
     const map: Record<string, Record<string, number | null>> = {};
     for (const name of employees) map[name] = {};
-    for (const entry of tabEntries) {
+    for (const entry of teamEntries) {
       if (!map[entry.employee]) map[entry.employee] = {};
       map[entry.employee][entry.week] = entry.value;
     }
     return map;
-  }, [employees, tabEntries]);
+  }, [employees, teamEntries]);
 
   const series = useMemo(() => {
     return WEEKS.map((week) => {
@@ -80,7 +65,7 @@ export default function Morale() {
   async function save(employee: string, week: string, value: number | null) {
     setSavingCell(`${employee}|${week}`);
     try {
-      await upsertMorale(deptId, employee, week, value);
+      await upsertMorale(TEAM_DEPT_ID, employee, week, value);
       reload();
     } finally {
       setSavingCell(null);
@@ -90,23 +75,12 @@ export default function Morale() {
   async function addEmployee() {
     const name = window.prompt("Имя сотрудника:")?.trim();
     if (!name) return;
-    // Создаём пустую запись (последняя неделя), чтобы сотрудник появился в гриде
-    await upsertMorale(deptId, name, WEEKS[WEEKS.length - 1], null);
+    await upsertMorale(TEAM_DEPT_ID, name, WEEKS[WEEKS.length - 1], null);
     reload();
   }
 
-  const counts = countsByTab(data ?? []);
-
   return (
     <div>
-      <div className="filters">
-        {TABS.map((t) => (
-          <button key={t.id} className={`filter-chip${tab === t.id ? " active" : ""}`} onClick={() => setTab(t.id)}>
-            {t.label} {counts[t.id] ? <span style={{ opacity: 0.6 }}>· {counts[t.id]}</span> : null}
-          </button>
-        ))}
-      </div>
-
       <div className="metrics-bar">
         <Metric label="Участников" value={employees.length} />
         <Metric label="Цель" value={`≥ ${TARGET}`} />
@@ -116,9 +90,7 @@ export default function Morale() {
 
       <div className="morale-grid">
         <p style={{ fontSize: 13, color: "var(--text-2)", margin: "4px 6px 8px" }}>
-          {tab === "team"
-            ? "Команда управления ДККиУР. Клик по ячейке — балл 0-5."
-            : `Сотрудники отдела «${labelOf(tab)}». Добавь людей кнопкой ниже.`}
+          Команда управления ДККиУР и отделы. Клик по ячейке — балл 0-5.
         </p>
         <table>
           <thead>
@@ -133,7 +105,7 @@ export default function Morale() {
             {employees.length === 0 && (
               <tr>
                 <td className="sticky" colSpan={WEEKS.length + 1} style={{ textAlign: "center", color: "var(--text-3)" }}>
-                  Сотрудников пока нет. Нажмите «+ Добавить сотрудника».
+                  Строк пока нет. Нажмите «+ Добавить сотрудника».
                 </td>
               </tr>
             )}
@@ -161,16 +133,14 @@ export default function Morale() {
             </tr>
           </tbody>
         </table>
-        {tab !== "team" && (
-          <button className="add-row" onClick={addEmployee}>
-            + Добавить сотрудника
-          </button>
-        )}
+        <button className="add-row" onClick={addEmployee}>
+          + Добавить сотрудника
+        </button>
       </div>
 
       <div className="card">
         <p style={{ fontSize: 13, color: "var(--text-2)", margin: "0 0 8px" }}>
-          Динамика среднего ({labelOf(tab)})
+          Динамика среднего
         </p>
         <div style={{ height: 240 }}>
           <ResponsiveContainer>
@@ -187,29 +157,6 @@ export default function Morale() {
       </div>
     </div>
   );
-}
-
-function labelOf(id: TabId): string {
-  return TABS.find((t) => t.id === id)?.label ?? id;
-}
-
-function countsByTab(entries: MoraleEntry[]): Record<TabId, number> {
-  const result: Record<TabId, Set<string>> = {
-    team: new Set(),
-    sport: new Set(),
-    culture: new Set(),
-    communications: new Set(),
-  };
-  for (const e of entries) {
-    const id = (e.department_id as TabId) in result ? (e.department_id as TabId) : null;
-    if (id) result[id].add(e.employee);
-  }
-  return {
-    team: result.team.size || TEAM_MEMBERS.length,
-    sport: result.sport.size,
-    culture: result.culture.size,
-    communications: result.communications.size,
-  };
 }
 
 function Metric({ label, value }: { label: string; value: string | number }) {
