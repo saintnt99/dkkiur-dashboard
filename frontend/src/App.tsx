@@ -12,7 +12,7 @@ const TABS = [
   { to: "/quality", label: "Качество" },
   { to: "/events", label: "События" },
   { to: "/morale", label: "Моральный климат" },
-  { to: "/problems", label: "Проблемные" },
+  { to: "/problems", label: "Мероприятия" },
   { to: "/calendar", label: "Календарь" },
 ];
 

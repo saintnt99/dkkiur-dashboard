@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import require_auth
 from ..db import get_db
-from ..models import AuditLog, ClimateSeries, Department, Event, Meeting, QualityMetric
+from ..models import AuditLog, ClimateSeries, Department, Event, Meeting, MoraleEntry, QualityMetric
 
 router = APIRouter()
 
@@ -61,6 +61,14 @@ def _event(e: Event, dept: Department) -> dict[str, Any]:
         "traffic_label": e.traffic_label,
         "budget": e.budget,
         "notes": e.notes,
+        "week": e.week,
+        "deviation": e.deviation,
+        "root_cause": e.root_cause,
+        "countermeasure": e.countermeasure,
+        "responsible": e.responsible,
+        "term_weeks": e.term_weeks,
+        "status_code": e.status_code,
+        "closure_confirm": e.closure_confirm,
         "is_high_priority": e.is_high_priority,
         "is_done": e.is_done,
         "is_problem": e.is_problem,
@@ -164,7 +172,14 @@ def summary(db: Session = Depends(get_db), _: str = Depends(require_auth)) -> di
 
 class PatchPayload(BaseModel):
     field: str
-    value: str | float | bool | None
+    value: str | float | bool | None | list | dict
+
+
+class MoralePatch(BaseModel):
+    department_id: str
+    employee: str
+    week: str
+    value: float | None
 
 
 def _apply_patch(target: Any, field: str, value: Any, identity: str, entity: str, db: Session) -> dict[str, Any]:
@@ -200,6 +215,45 @@ def patch_event(event_id: str, payload: PatchPayload, db: Session = Depends(get_
     if not ev:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "event not found")
     return _apply_patch(ev, payload.field, payload.value, identity, "event", db)
+
+
+@router.patch("/meetings/{meeting_id}")
+def patch_meeting(meeting_id: str, payload: PatchPayload, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    m = db.get(Meeting, meeting_id)
+    if not m:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "meeting not found")
+    return _apply_patch(m, payload.field, payload.value, identity, "meeting", db)
+
+
+@router.get("/morale_entries")
+def list_morale_entries(db: Session = Depends(get_db), _: str = Depends(require_auth)) -> list[dict[str, Any]]:
+    rows = db.scalars(select(MoraleEntry)).all()
+    return [
+        {"id": r.id, "department_id": r.department_id, "employee": r.employee, "week": r.week, "value": r.value}
+        for r in rows
+    ]
+
+
+@router.put("/morale_entries")
+def upsert_morale_entry(payload: MoralePatch, db: Session = Depends(get_db), identity: str = Depends(require_auth)) -> dict[str, Any]:
+    existing = db.scalar(
+        select(MoraleEntry).where(
+            MoraleEntry.department_id == payload.department_id,
+            MoraleEntry.employee == payload.employee,
+            MoraleEntry.week == payload.week,
+        )
+    )
+    if existing:
+        old = existing.value
+        existing.value = payload.value
+        db.add(AuditLog(identity=identity, entity="morale_entry", entity_id=str(existing.id), field="value", old_value=str(old) if old is not None else None, new_value=str(payload.value) if payload.value is not None else None))
+    else:
+        existing = MoraleEntry(department_id=payload.department_id, employee=payload.employee, week=payload.week, value=payload.value)
+        db.add(existing)
+        db.flush()
+        db.add(AuditLog(identity=identity, entity="morale_entry", entity_id=str(existing.id), field="value", old_value=None, new_value=str(payload.value) if payload.value is not None else None))
+    db.commit()
+    return {"ok": True, "id": existing.id, "value": payload.value}
 
 
 @router.get("/audit")

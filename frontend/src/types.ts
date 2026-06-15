@@ -46,9 +46,25 @@ export type EventItem = {
   traffic_label: string;
   budget: string;
   notes: string;
+  week: string;
+  deviation: string;
+  root_cause: string;
+  countermeasure: string;
+  responsible: string;
+  term_weeks: string;
+  status_code: number;
+  closure_confirm: string;
   is_high_priority: boolean;
   is_done: boolean;
   is_problem: boolean;
+};
+
+export type MoraleEntry = {
+  id: number;
+  department_id: string;
+  employee: string;
+  week: string;
+  value: number | null;
 };
 
 export type ClimatePoint = { week: string; value: number | null; count: number };

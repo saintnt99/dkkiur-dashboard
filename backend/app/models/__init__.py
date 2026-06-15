@@ -5,5 +5,6 @@ from .data import (  # noqa: F401
     Event,
     ImportLog,
     Meeting,
+    MoraleEntry,
     QualityMetric,
 )

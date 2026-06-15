@@ -1,132 +1,137 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useMorale } from "../api/data";
-import type { Climate, ClimatePoint } from "../types";
+import { InlineEdit } from "../components/InlineEdit";
+import { upsertMorale, useMoraleEntries } from "../api/data";
 
+// Закреплённая команда управления ДККиУР
 const PARTICIPANTS = [
-  "Камнева Евгения",
-  "Серкова Ольга",
-  "Виктор Чумаков",
-  "Гущина Валерия",
-  "Наиль Якубалиев",
+  { name: "Камнева Евгения", department_id: "culture" },
+  { name: "Серкова Ольга", department_id: "culture" },
+  { name: "Виктор Чумаков", department_id: "communications" },
+  { name: "Гущина Валерия", department_id: "communications" },
+  { name: "Наиль Якубалиев", department_id: "sport" },
 ];
 
-function heatColor(v: number | null, target: number): string {
-  if (v === null) return "var(--surface-2)";
-  if (v >= target) return "var(--success-bg)";
-  if (v >= target - 1) return "var(--warn-bg)";
+// Недели 5-26 — те же что в xlsx
+const WEEKS = Array.from({ length: 22 }, (_, i) => String(i + 5));
+const TARGET = 3;
+
+function heatColor(v: number | null): string {
+  if (v === null || v === undefined) return "transparent";
+  if (v >= TARGET) return "var(--success-bg)";
+  if (v >= TARGET - 1) return "var(--warn-bg)";
   return "var(--danger-bg)";
 }
 
-function buildUnifiedClimate(items: Climate[] | null): Climate | null {
-  if (!items || items.length === 0) return null;
-  const first = items[0];
-  const target = first.target || 3;
-  const weekOrder = Array.from(new Set(items.flatMap((item) => item.series.map((point) => point.week))));
-  const series: ClimatePoint[] = weekOrder.map((week) => {
-    const points = items.flatMap((item) => item.series.filter((point) => point.week === week));
-    const values = points.map((point) => point.value).filter((value): value is number => value !== null);
-    const count = points.reduce((sum, point) => sum + point.count, 0);
-    return {
-      week,
-      value: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
-      count,
-    };
-  });
-  const latest = [...series].reverse().find((point) => point.value !== null);
-  return {
-    department_id: "management",
-    department: "Управление",
-    title: "Моральный климат управления",
-    question: first.question,
-    target,
-    employee_count: PARTICIPANTS.length,
-    latest_week: latest?.week ?? "",
-    latest_value: latest?.value ?? null,
-    status: latest?.value === undefined || latest.value === null ? "Нет данных" : latest.value >= target ? "В норме" : "Ниже цели",
-    series,
-  };
-}
-
 export default function Morale() {
-  const { data, loading } = useMorale();
-  const current = useMemo(() => buildUnifiedClimate(data), [data]);
+  const { data, loading, reload } = useMoraleEntries();
+  const [savingCell, setSavingCell] = useState<string | null>(null);
+
+  // employee → week → value
+  const grid = useMemo(() => {
+    const map: Record<string, Record<string, number | null>> = {};
+    for (const p of PARTICIPANTS) map[p.name] = {};
+    for (const entry of data ?? []) {
+      if (!map[entry.employee]) map[entry.employee] = {};
+      map[entry.employee][entry.week] = entry.value;
+    }
+    return map;
+  }, [data]);
+
+  const series = useMemo(() => {
+    return WEEKS.map((week) => {
+      const values = PARTICIPANTS.map((p) => grid[p.name]?.[week]).filter((v): v is number => typeof v === "number");
+      const avg = values.length ? values.reduce((s, v) => s + v, 0) / values.length : null;
+      return { week, value: avg, count: values.length };
+    });
+  }, [grid]);
+
+  const latest = useMemo(() => {
+    for (let i = series.length - 1; i >= 0; i--) if (series[i].value !== null) return series[i];
+    return null;
+  }, [series]);
 
   if (loading) return <div className="card placeholder">Загрузка…</div>;
 
+  async function save(employee: string, dept: string, week: string, value: number | null) {
+    setSavingCell(`${employee}|${week}`);
+    try {
+      await upsertMorale(dept, employee, week, value);
+      reload();
+    } finally {
+      setSavingCell(null);
+    }
+  }
+
   return (
     <div>
-      {!current ? (
-        <div className="card placeholder">Нет данных по моральному климату</div>
-      ) : (
-        <>
-          <div className="metrics-bar">
-            <Metric label="Участников" value={current.employee_count} />
-            <Metric label="Цель" value={`≥ ${current.target}`} />
-            <Metric label="Последняя неделя" value={current.latest_week || "—"} />
-            <Metric label="Последнее значение" value={current.latest_value === null ? "—" : current.latest_value.toFixed(2)} />
-          </div>
+      <div className="metrics-bar">
+        <Metric label="Участников" value={PARTICIPANTS.length} />
+        <Metric label="Цель" value={`≥ ${TARGET}`} />
+        <Metric label="Последняя неделя" value={latest?.week ?? "—"} />
+        <Metric label="Среднее по команде" value={latest?.value === null || latest?.value === undefined ? "—" : latest.value.toFixed(2)} />
+      </div>
 
-          <div className="card morale-team">
-            <div>
-              <p style={{ fontSize: 13, color: "var(--text-2)", margin: "0 0 4px" }}>Состав управления</p>
-              <p style={{ fontSize: 12, color: "var(--text-3)", margin: 0 }}>Один общий моральный климат для трёх отделов</p>
-            </div>
-            <div className="morale-people">
-              {PARTICIPANTS.map((person) => (
-                <span key={person}>{person}</span>
+      <div className="morale-grid">
+        <p style={{ fontSize: 13, color: "var(--text-2)", margin: "4px 6px 8px" }}>
+          Сводка по неделям. Кликните на ячейку чтобы внести балл (0-5). Пусто = ещё не оценено.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th className="sticky">Сотрудник</th>
+              {WEEKS.map((w) => (
+                <th key={w}>{w}</th>
               ))}
-            </div>
-          </div>
-
-          <div className="card" style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 13, color: "var(--text-2)", margin: "0 0 4px" }}>{current.title}</p>
-            <p style={{ fontSize: 12, color: "var(--text-3)", margin: "0 0 10px" }}>{current.question}</p>
-            <div style={{ height: 240 }}>
-              <ResponsiveContainer>
-                <LineChart data={current.series.map((p) => ({ ...p }))} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
-                  <CartesianGrid stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: "var(--text-2)" }} />
-                  <YAxis domain={[0, "dataMax + 1"]} tick={{ fontSize: 11, fill: "var(--text-2)" }} />
-                  <Tooltip contentStyle={{ background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-                  <ReferenceLine y={current.target} stroke="var(--danger-fg)" strokeDasharray="3 3" label={{ value: "Цель", fill: "var(--danger-fg)", fontSize: 11 }} />
-                  <Line type="monotone" dataKey="value" stroke="var(--benefits-bar)" strokeWidth={2} dot={{ r: 2 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="card heatmap">
-            <p style={{ fontSize: 13, color: "var(--text-2)", margin: "0 0 8px" }}>Сводка по неделям</p>
-            <table>
-              <thead>
-                <tr>
-                  <th className="sticky">Метрика</th>
-                  {current.series.map((p) => (
-                    <th key={p.week}>{p.week}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="sticky">Среднее</td>
-                  {current.series.map((p) => (
-                    <td key={p.week} style={{ background: heatColor(p.value, current.target) }}>
-                      {p.value === null ? "—" : p.value.toFixed(1)}
+            </tr>
+          </thead>
+          <tbody>
+            {PARTICIPANTS.map((p) => (
+              <tr key={p.name}>
+                <td className="sticky">{p.name}</td>
+                {WEEKS.map((w) => {
+                  const v = grid[p.name]?.[w] ?? null;
+                  const key = `${p.name}|${w}`;
+                  return (
+                    <td key={w} style={{ background: heatColor(v), opacity: savingCell === key ? 0.5 : 1 }}>
+                      <InlineEdit
+                        kind="number"
+                        value={v}
+                        onSave={(val) => save(p.name, p.department_id, w, val)}
+                        placeholder="—"
+                      />
                     </td>
-                  ))}
-                </tr>
-                <tr>
-                  <td className="sticky">Ответов</td>
-                  {current.series.map((p) => (
-                    <td key={p.week}>{p.count}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+                  );
+                })}
+              </tr>
+            ))}
+            <tr style={{ fontWeight: 500 }}>
+              <td className="sticky">Среднее</td>
+              {series.map((p) => (
+                <td key={p.week} style={{ background: heatColor(p.value), fontVariantNumeric: "tabular-nums" }}>
+                  {p.value === null ? "—" : p.value.toFixed(1)}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card">
+        <p style={{ fontSize: 13, color: "var(--text-2)", margin: "0 0 8px" }}>Динамика среднего по команде</p>
+        <div style={{ height: 240 }}>
+          <ResponsiveContainer>
+            <LineChart data={series} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+              <CartesianGrid stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="week" tick={{ fontSize: 11, fill: "var(--text-2)" }} />
+              <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: "var(--text-2)" }} />
+              <Tooltip contentStyle={{ background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <ReferenceLine y={TARGET} stroke="var(--danger-fg)" strokeDasharray="3 3" label={{ value: "Цель", fill: "var(--danger-fg)", fontSize: 11 }} />
+              <Line type="monotone" dataKey="value" stroke="var(--benefits-bar)" strokeWidth={2} dot={{ r: 2 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

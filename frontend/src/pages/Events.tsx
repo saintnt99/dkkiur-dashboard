@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useEvents, useSummary } from "../api/data";
+import { InlineEdit } from "../components/InlineEdit";
+import { patchEvent2, useEvents, useSummary } from "../api/data";
 import type { EventItem } from "../types";
 
 const DEPTS = [
@@ -27,8 +28,24 @@ function statusPill(e: EventItem): { label: string; cls: string } {
   return { label: "—", cls: "neutral" };
 }
 
+const PRIORITY_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Высокий", label: "Высокий" },
+  { value: "Средний", label: "Средний" },
+  { value: "Низкий", label: "Низкий" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "В работе", label: "В работе" },
+  { value: "Проблема", label: "Проблема" },
+  { value: "Запланировано", label: "Запланировано" },
+  { value: "Приостановлено", label: "Приостановлено" },
+  { value: "Завершено", label: "Завершено" },
+];
+
 export default function Events() {
-  const { data: events, loading } = useEvents();
+  const { data: events, loading, reload } = useEvents();
   const { data: summary } = useSummary();
   const [dept, setDept] = useState("all");
   const [statusF, setStatusF] = useState("Все");
@@ -100,18 +117,33 @@ export default function Events() {
           </thead>
           <tbody>
             {filtered.map((e) => {
-              const p = statusPill(e);
+              const patch = async (field: string, value: string) => {
+                await patchEvent2(e.id, field, value);
+                reload();
+              };
               return (
                 <tr key={e.id} className={rowClass(e)}>
                   <td>{e.department}</td>
-                  <td>{e.number}</td>
-                  <td>{e.name}</td>
-                  <td>{e.priority}</td>
-                  <td>{e.owner}</td>
-                  <td>{e.curator}</td>
-                  <td>{e.deadline}</td>
                   <td>
-                    <span className={`pill ${p.cls}`}>{p.label}</span>
+                    <InlineEdit kind="text" value={e.number} onSave={(v) => patch("number", v)} />
+                  </td>
+                  <td>
+                    <InlineEdit kind="text" multiline value={e.name} onSave={(v) => patch("name", v)} />
+                  </td>
+                  <td>
+                    <InlineEdit kind="select" value={e.priority} options={PRIORITY_OPTIONS} onSave={(v) => patch("priority", v)} />
+                  </td>
+                  <td>
+                    <InlineEdit kind="text" value={e.owner} onSave={(v) => patch("owner", v)} />
+                  </td>
+                  <td>
+                    <InlineEdit kind="text" value={e.curator} onSave={(v) => patch("curator", v)} />
+                  </td>
+                  <td>
+                    <InlineEdit kind="text" value={e.deadline} onSave={(v) => patch("deadline", v)} />
+                  </td>
+                  <td>
+                    <InlineEdit kind="select" value={e.status} options={STATUS_OPTIONS} onSave={(v) => patch("status", v)} />
                   </td>
                 </tr>
               );

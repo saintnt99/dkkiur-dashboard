@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Climate, Department, EventItem, Meeting, QualityMetric, Summary } from "../types";
+import type { Climate, Department, EventItem, Meeting, MoraleEntry, QualityMetric, Summary } from "../types";
 
 async function getJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
@@ -32,8 +32,31 @@ export const useDepartments = () => useFetch<Department[]>("/api/departments");
 export const useQuality = () => useFetch<QualityMetric[]>("/api/quality");
 export const useEvents = () => useFetch<EventItem[]>("/api/events");
 export const useMorale = () => useFetch<Climate[]>("/api/morale");
+export const useMoraleEntries = () => useFetch<MoraleEntry[]>("/api/morale_entries");
 export const useMeetings = () => useFetch<Meeting[]>("/api/meetings");
 export const useSummary = () => useFetch<Summary>("/api/summary");
+
+async function patchJSON(url: string, body: unknown, method: "PATCH" | "PUT" = "PATCH"): Promise<unknown> {
+  const res = await fetch(url, {
+    method,
+    headers: { "content-type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+type PatchValue = string | number | boolean | null;
+
+export const patchQuality = (id: string, field: string, value: PatchValue) =>
+  patchJSON(`/api/quality/${id}`, { field, value });
+export const patchEvent2 = (id: string, field: string, value: PatchValue) =>
+  patchJSON(`/api/events/${id}`, { field, value });
+export const patchMeeting = (id: string, field: string, value: PatchValue) =>
+  patchJSON(`/api/meetings/${id}`, { field, value });
+export const upsertMorale = (department_id: string, employee: string, week: string, value: number | null) =>
+  patchJSON(`/api/morale_entries`, { department_id, employee, week, value }, "PUT");
 
 export async function uploadDepartmentXlsx(dept: string, file: File): Promise<unknown> {
   const fd = new FormData();

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { InlineEdit } from "../components/InlineEdit";
 import { Sparkline } from "../components/Sparkline";
 import { UploadButton } from "../components/UploadButton";
-import { uploadDepartmentXlsx, useQuality } from "../api/data";
+import { patchQuality, uploadDepartmentXlsx, useQuality } from "../api/data";
 import type { QualityMetric } from "../types";
 
 const DEPTS: { id: string; label: string }[] = [
@@ -19,10 +20,6 @@ function statusLight(m: QualityMetric): "green" | "red" | "amber" | "grey" {
   return "red";
 }
 
-function fmtNum(v: number | null): string {
-  if (v === null || v === undefined) return "—";
-  return Number.isInteger(v) ? String(v) : v.toFixed(2);
-}
 
 export default function Quality() {
   const { data, loading, error, reload } = useQuality();
@@ -71,16 +68,41 @@ export default function Quality() {
 
       <div className="kpi-grid">
         {filtered.map((m) => (
-          <div key={m.id} className={`kpi-card${active === m.id ? " active" : ""}`} onClick={() => setActive(active === m.id ? null : m.id)}>
-            <div className="kpi-dept">
+          <div key={m.id} className={`kpi-card${active === m.id ? " active" : ""}`}>
+            <div className="kpi-dept" onClick={() => setActive(active === m.id ? null : m.id)} style={{ cursor: "pointer" }}>
               {m.department} · <span className={`kpi-light ${statusLight(m)}`} /> {m.status}
             </div>
-            <p className="kpi-title">{m.title}</p>
+            <p className="kpi-title">
+              <InlineEdit kind="text" multiline value={m.title} onSave={async (v) => { await patchQuality(m.id, "title", v); reload(); }} />
+            </p>
             <div className="kpi-row">
-              <span className="kpi-fact">{fmtNum(m.latest_fact)}</span>
-              <span className="kpi-target">из {fmtNum(m.latest_target)}</span>
+              <span className="kpi-fact">
+                <InlineEdit
+                  kind="number"
+                  value={m.latest_fact}
+                  onSave={async (v) => {
+                    await patchQuality(m.id, "latest_fact", v);
+                    if (v !== null && m.latest_target) await patchQuality(m.id, "progress", v / m.latest_target);
+                    reload();
+                  }}
+                />
+              </span>
+              <span className="kpi-target">
+                из{" "}
+                <InlineEdit
+                  kind="number"
+                  value={m.latest_target}
+                  onSave={async (v) => {
+                    await patchQuality(m.id, "latest_target", v);
+                    if (v && m.latest_fact !== null) await patchQuality(m.id, "progress", m.latest_fact / v);
+                    reload();
+                  }}
+                />
+              </span>
             </div>
-            <Sparkline points={m.series} />
+            <div onClick={() => setActive(active === m.id ? null : m.id)} style={{ cursor: "pointer" }}>
+              <Sparkline points={m.series} />
+            </div>
           </div>
         ))}
         {filtered.length === 0 && <div className="card placeholder">Нет показателей для фильтра</div>}

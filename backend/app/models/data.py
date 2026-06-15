@@ -67,9 +67,34 @@ class Event(Base):
     is_done: Mapped[bool] = mapped_column(Boolean, default=False)
     is_problem: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str] = mapped_column(Text, default="")
+    # Поля для журнала отклонений (вводятся вручную в UI)
+    week: Mapped[str] = mapped_column(String(32), default="")
+    deviation: Mapped[str] = mapped_column(Text, default="")
+    root_cause: Mapped[str] = mapped_column(Text, default="")
+    countermeasure: Mapped[str] = mapped_column(Text, default="")
+    responsible: Mapped[str] = mapped_column(String(255), default="")
+    term_weeks: Mapped[str] = mapped_column(String(32), default="")
+    status_code: Mapped[int] = mapped_column(Integer, default=0)  # 0=пусто, 1..4=пирожок
+    closure_confirm: Mapped[str] = mapped_column(Text, default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     department: Mapped[Department] = relationship(back_populates="events")
+
+
+class MoraleEntry(Base):
+    """Балл морального климата сотрудника за конкретную неделю.
+
+    Сетка сотрудник × неделя. department_id связывает с отделом, но в UI
+    показываем единую таблицу управления.
+    """
+    __tablename__ = "morale_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    department_id: Mapped[str] = mapped_column(ForeignKey("departments.id"))
+    employee: Mapped[str] = mapped_column(String(128))
+    week: Mapped[str] = mapped_column(String(32))
+    value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class ClimateSeries(Base):

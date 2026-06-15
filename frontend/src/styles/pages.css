@@ -97,12 +97,6 @@
   align-items: center;
 }
 
-.filter-note {
-  color: var(--text-3);
-  font-size: 12px;
-  padding: 6px 0;
-}
-
 .filter-chip {
   font-family: inherit;
   font-size: 12px;
@@ -273,38 +267,6 @@
 .problem-card dt { color: var(--text-3); }
 .problem-card dd { margin: 0; color: var(--text-2); }
 
-.morale-team {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.morale-people {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.morale-people span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-@media (max-width: 720px) {
-  .morale-team {
-    grid-template-columns: 1fr;
-  }
-}
-
 .heatmap {
   display: block;
   width: 100%;
@@ -389,3 +351,169 @@
 }
 
 .upload-btn:hover { background: var(--surface-2); }
+
+.inline-edit {
+  cursor: text;
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-word;
+  border: 0.5px dashed transparent;
+}
+
+.inline-edit:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.inline-edit.err {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+.inline-placeholder {
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.inline-edit-input {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 0.5px solid var(--news-bar);
+  border-radius: 4px;
+  padding: 2px 4px;
+  width: 100%;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.inline-edit-input.err { border-color: var(--danger-fg); }
+textarea.inline-edit-input { resize: vertical; font-family: inherit; }
+select.inline-edit-input { padding: 2px 4px; }
+
+/* Большая таблица «Мероприятия» */
+.measures-table-wrap {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  overflow-x: auto;
+}
+
+.measures-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.measures-table th,
+.measures-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--border);
+  vertical-align: top;
+}
+
+.measures-table th {
+  font-weight: 500;
+  color: var(--text-2);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.measures-table tr:hover td { background: var(--surface-2); }
+
+.measures-table .col-num   { width: 36px; text-align: center; color: var(--text-3); }
+.measures-table .col-pie   { width: 60px;  text-align: center; }
+.measures-table .col-week  { width: 80px;  }
+.measures-table .col-actor { width: 130px; }
+.measures-table .col-add   { width: 60px;  text-align: center; }
+
+.measures-table textarea.inline-edit-input {
+  min-height: 26px;
+}
+
+/* Pie status icon */
+.pie-status {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.pie-status .label {
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.pie-popover {
+  position: absolute;
+  background: var(--surface);
+  border: 0.5px solid var(--border-2);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  box-shadow: 0 4px 12px var(--shadow-modal);
+  z-index: 10;
+}
+
+/* Morale grid */
+.morale-grid {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.morale-grid table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.morale-grid th,
+.morale-grid td {
+  border: 0.5px solid var(--border);
+  padding: 6px 8px;
+  text-align: center;
+  min-width: 60px;
+  font-variant-numeric: tabular-nums;
+}
+
+.morale-grid th.sticky,
+.morale-grid td.sticky {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  text-align: left;
+  min-width: 160px;
+  z-index: 1;
+}
+
+.morale-grid th { background: var(--surface); color: var(--text-2); font-weight: 500; }
+
+.morale-grid td .inline-edit { display: block; min-width: 36px; min-height: 18px; }
+
+.add-row {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px 14px;
+  background: var(--news-bg);
+  color: var(--news-fg);
+  border: 0.5px solid var(--news-bar);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-top: 10px;
+}
